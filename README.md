@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/devlms/moodle-paygw_whop/actions/workflows/ci.yml/badge.svg)](https://github.com/devlms/moodle-paygw_whop/actions/workflows/ci.yml)
 [![Maturity](https://img.shields.io/badge/maturity-alpha-orange)](version.php)
+[![Sponsor](https://img.shields.io/badge/sponsor-this%20plugin-2438ff)](https://devlms.com/sponsors/?plugin=paygw_whop)
 
 A Moodle payment gateway for [Whop](https://whop.com). Learners pay course fees with cards, Apple Pay, Google Pay, PayPal and the other methods Whop offers in their country. Whop is the merchant of record: it handles the payment, the receipt and, depending on your tax settings, the sales tax.
 
@@ -33,6 +34,12 @@ The learner chooses Whop in Moodle's payment window and pays on Whop's checkout 
 ## Requirements
 
 Moodle 4.5 to 5.3. A Whop account in a [supported payout country](https://docs.whop.com).
+
+## Sponsors
+
+<!-- sponsors:start -->
+No sponsors yet. [Sponsor this plugin](https://devlms.com/sponsors/?plugin=paygw_whop): your name or logo, with a link to your site, goes here and on [devlms.com/sponsors](https://devlms.com/sponsors/).
+<!-- sponsors:end -->
 
 ## Licence
 
