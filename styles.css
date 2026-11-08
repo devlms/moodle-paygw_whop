@@ -1,0 +1,22 @@
+/* Whop checkout page. Scoped to .paygw-whop. */
+.paygw-whop {
+    max-width: 32rem;
+}
+
+.paygw-whop-what {
+    margin-bottom: .25rem;
+    color: #495057;
+}
+
+.paygw-whop-cost {
+    margin-bottom: 1.25rem;
+    font-size: 1.75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.paygw-whop-note {
+    margin-top: 1rem;
+    color: #5b6269;
+    font-size: .875rem;
+}

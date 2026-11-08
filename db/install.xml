@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="payment/gateway/whop/db" VERSION="20261108" COMMENT="XMLDB file for paygw_whop"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="paygw_whop" COMMENT="One row per Whop checkout, from creation until it is paid, failed or canceled">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="checkoutid" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="Whop checkout configuration id (ch_), set once it exists"/>
+        <FIELD NAME="whoppaymentid" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="Whop payment id (pay_) once a payment exists"/>
+        <FIELD NAME="accountid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Payment account whose keys were used"/>
+        <FIELD NAME="component" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="paymentarea" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="itemid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Who pays"/>
+        <FIELD NAME="amount" TYPE="number" LENGTH="15" NOTNULL="true" SEQUENCE="false" DECIMALS="2" COMMENT="Amount asked, in major units"/>
+        <FIELD NAME="currency" TYPE="char" LENGTH="3" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending, paid, failed or canceled"/>
+        <FIELD NAME="owner" TYPE="char" LENGTH="100" NOTNULL="true" DEFAULT="paygw_whop" SEQUENCE="false" COMMENT="Component that delivers the order when paid: this gateway or a hub that started the checkout"/>
+        <FIELD NAME="reference" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="The owner's own reference, for a hub"/>
+        <FIELD NAME="paymentid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="core payments id once delivered"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="accountid" TYPE="foreign" FIELDS="accountid" REFTABLE="payment_accounts" REFFIELDS="id"/>
+        <KEY NAME="paymentid" TYPE="foreign" FIELDS="paymentid" REFTABLE="payments" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="checkoutid" UNIQUE="true" FIELDS="checkoutid"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

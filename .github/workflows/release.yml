@@ -1,0 +1,38 @@
+name: Release
+
+# On a version tag: build the install zip, sign it with the DevLMS release key (PAYHUB_SIGNING_KEY, Ed25519),
+# and attach both to the GitHub release. The DevLMS payment hub installs a gateway only when the zip matches the
+# SHA-256 GitHub publishes for it and the signature checks out against the public key built into the hub.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  zip:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build and attach the install zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          SIGNING_KEY: ${{ secrets.PAYHUB_SIGNING_KEY }}
+        run: |
+          component=$(sed -nE "s/^\\\$plugin->component *= *'([a-z]+)_([a-z0-9_]+)';.*/\1_\2/p" version.php)
+          name=${component#*_}
+          zip="${component}-${TAG#v}.zip"
+          git archive --format=zip --prefix="$name/" -o "$zip" "$TAG" -- . ':!.github' ':!.gitattributes' ':!.gitignore'
+          files="$zip"
+          if [ -n "$SIGNING_KEY" ]; then
+            php -r 'file_put_contents($argv[1] . ".sig", base64_encode(sodium_crypto_sign_detached(file_get_contents($argv[1]), base64_decode(getenv("SIGNING_KEY")))));' "$zip"
+            files="$zip $zip.sig"
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" $files --clobber
+          else
+            pre=$(grep -q 'MATURITY_STABLE' version.php && echo '' || echo '--prerelease')
+            gh release create "$TAG" $files --title "${TAG#v}" --notes "Install zip: $zip" $pre
+          fi

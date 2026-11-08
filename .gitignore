@@ -1,0 +1,3 @@
+.phpunit.result.cache
+.playwright-cli/
+node_modules/
