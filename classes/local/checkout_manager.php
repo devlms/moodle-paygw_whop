@@ -98,12 +98,13 @@ class checkout_manager {
             'timemodified' => $now,
         ];
         $row->id = $DB->insert_record('paygw_whop', $row);
-        $checkout = self::client($config)->create_checkout(
-            (string) ($config['companyid'] ?? ''),
+        $client = self::client($config);
+        $companyid = (string) ($config['companyid'] ?? '');
+        $checkout = $client->create_checkout(
+            $companyid,
+            self::product($client, $companyid),
             (float) $row->amount,
             $currency,
-            // One Whop product per Moodle item, found again by this identifier.
-            'moodle-' . sha1($component . '/' . $paymentarea . '/' . $itemid . '/' . $payable->get_account_id()),
             format_string($description, true, ['escape' => false]),
             (new \moodle_url('/payment/gateway/whop/return.php', ['id' => $row->id]))->out(false),
             ['moodle_checkout' => (string) $row->id]
@@ -111,6 +112,23 @@ class checkout_manager {
         $DB->update_record('paygw_whop', (object) ['id' => $row->id, 'checkoutid' => (string) $checkout['id'],
             'timemodified' => time()]);
         return (string) $checkout['purchase_url'];
+    }
+
+    /**
+     * The hidden Whop product that this business's Moodle checkouts are sold under: created once, then remembered.
+     *
+     * @param client $client
+     * @param string $companyid biz_...
+     * @return string prod_...
+     */
+    private static function product(client $client, string $companyid): string {
+        $key = 'product_' . preg_replace('/[^A-Za-z0-9_]/', '', $companyid);
+        $productid = (string) get_config('paygw_whop', $key);
+        if ($productid === '') {
+            $productid = $client->create_product($companyid, get_string('productname', 'paygw_whop'));
+            set_config($key, $productid, 'paygw_whop');
+        }
+        return $productid;
     }
 
     /**

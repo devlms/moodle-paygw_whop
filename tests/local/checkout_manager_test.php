@@ -61,6 +61,8 @@ final class checkout_manager_test extends \advanced_testcase {
         ]);
         $this->student = $gen->create_user();
         $this->setUser($this->student);
+        // The business already has its Moodle product, so checkouts need one answer from Whop.
+        set_config('product_biz_1', 'prod_known', 'paygw_whop');
     }
 
     /**
@@ -69,7 +71,8 @@ final class checkout_manager_test extends \advanced_testcase {
      * @param array ...$answers Decoded JSON answers.
      */
     private function answers(array ...$answers): void {
-        foreach ($answers as $answer) {
+        // Moodle's mock is a stack (array_pop): push the last answer first so they come back in order.
+        foreach (array_reverse($answers) as $answer) {
             \curl::mock_response(json_encode($answer));
         }
     }
@@ -179,5 +182,59 @@ final class checkout_manager_test extends \advanced_testcase {
         $this->assertSame(checkout_manager::PAID, checkout_manager::sync((int) $row->id, 'pay_1')->status);
         $this->assertTrue(is_enrolled(\context_course::instance($this->course->id), $this->student));
         $this->assertSame('paid', $DB->get_field('paygw_payhub', 'status', ['reference' => $row->reference]));
+    }
+    public function test_checkout_body_uses_a_variant_on_the_moodle_product(): void {
+        // Whop's current API refuses an inline plan ("variant_id is required for payment mode"): found in a sandbox run.
+        $body = client::checkout_body(
+            'biz_1',
+            'prod_9',
+            49.5,
+            'USD',
+            'Introduction to a very long course title indeed',
+            'https://moodle.example/return.php?id=3',
+            ['moodle_checkout' => '3']
+        );
+        $this->assertArrayNotHasKey('plan', $body);
+        $this->assertSame('payment', $body['mode']);
+        $this->assertSame(['moodle_checkout' => '3'], $body['metadata']);
+        $this->assertSame('biz_1', $body['variant']['account_id']);
+        $this->assertSame('prod_9', $body['variant']['product_id']);
+        $this->assertSame('one_time', $body['variant']['billing_type']);
+        $this->assertSame(49.5, $body['variant']['initial_price']);
+        $this->assertSame('usd', $body['variant']['currency']);
+        $this->assertSame('hidden', $body['variant']['visibility']);
+        $this->assertTrue($body['variant']['force_create_new_plan']);
+        $this->assertLessThanOrEqual(30, \core_text::strlen($body['variant']['title']), 'Whop caps variant titles at 30.');
+    }
+
+    public function test_the_moodle_product_is_created_once_per_business(): void {
+        unset_config('product_biz_1', 'paygw_whop');
+        // First checkout: create the product, then the checkout.
+        $this->answers(
+            ['id' => 'prod_new', 'title' => 'Moodle course payments'],
+            ['id' => 'ch_a', 'purchase_url' => '/checkout/ch_a/']
+        );
+        $this->assertSame(
+            'https://whop.com/checkout/ch_a/',
+            checkout_manager::start('enrol_fee', 'fee', $this->instanceid, (int) $this->student->id, 'Physics')
+        );
+        $this->assertSame('prod_new', get_config('paygw_whop', 'product_biz_1'));
+        // Second checkout reuses it: only a checkout answer is queued.
+        $this->answers(['id' => 'ch_b', 'purchase_url' => '/checkout/ch_b/']);
+        $this->assertSame(
+            'https://whop.com/checkout/ch_b/',
+            checkout_manager::start('enrol_fee', 'fee', $this->instanceid, (int) $this->student->id, 'Physics')
+        );
+    }
+    public function test_legacy_webhooks_name_the_event_in_action(): void {
+        // Webhooks created on Whop's legacy API version send "action" instead of "type".
+        $this->started();
+        $body = json_encode(['action' => 'payment.succeeded', 'data' => ['id' => 'pay_1', 'checkout_configuration_id' => 'ch_1']]);
+        $now = 1800000000;
+        $sig = 'v1,' . base64_encode(hash_hmac('sha256', "msg_9.$now.$body", self::SECRET, true));
+        $this->answers(self::payment('paid'));
+        $headers = ['webhook-id' => 'msg_9', 'webhook-timestamp' => (string) $now, 'webhook-signature' => $sig];
+        $this->assertSame(200, webhook::handle($body, $headers, $now));
+        $this->assertSame(checkout_manager::PAID, checkout_manager::find('ch_1')->status);
     }
 }

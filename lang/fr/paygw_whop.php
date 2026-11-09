@@ -64,6 +64,7 @@ $string['privacy:metadata:whop'] = 'Pour encaisser un paiement, le montant, la d
 $string['privacy:metadata:whop:amount'] = 'Le montant à payer.';
 $string['privacy:metadata:whop:description'] = 'Ce qui est payé.';
 $string['privacy:metadata:whop:metadata'] = 'Une référence vers ce paiement dans Moodle.';
+$string['productname'] = 'Paiements de cours Moodle';
 $string['redirectnote'] = 'Vous payez sur la page sécurisée de Whop, puis vous revenez ici.';
 $string['waiting'] = 'Whop n\'a pas encore confirmé ce paiement. Cela prend généralement quelques secondes.';
 $string['webhooksecret'] = 'Secret du webhook';

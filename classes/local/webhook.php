@@ -42,7 +42,9 @@ class webhook {
         if (!is_array($event) || empty($headers['webhook-signature'])) {
             return 400;
         }
-        if (!str_starts_with((string) ($event['type'] ?? ''), 'payment.') || $checkoutid === '' || $paymentid === '') {
+        // Current API versions name the event in "type", the legacy one in "action".
+        $type = (string) ($event['type'] ?? $event['action'] ?? '');
+        if (!str_starts_with($type, 'payment.') || $checkoutid === '' || $paymentid === '') {
             return 200;
         }
         $row = checkout_manager::find($checkoutid);
